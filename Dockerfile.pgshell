@@ -1,0 +1,51 @@
+FROM postgres:17
+
+ENV DEBIAN_FRONTEND=noninteractive
+ARG ATUIN_INSTALL="1"
+
+# Ensure the Python venv tooling is available, create a venv and install pgcli into it.
+# Installing into /opt/venv avoids touching system site-packages (PEP 668), so pip won't complain.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    zsh git curl python3-venv python3-pip locales less ca-certificates tar gnupg unzip \
+  && python3 -m venv /opt/venv \
+  && /opt/venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel \
+  && /opt/venv/bin/pip install --no-cache-dir pgcli \
+  && ln -s /opt/venv/bin/pgcli /usr/local/bin/pgcli \
+  && rm -rf /var/lib/apt/lists/*
+
+# Ensure scripts dir exists
+RUN mkdir -p /opt/scripts && chmod 755 /opt/scripts
+
+# install a minimal oh-my-zsh for root user (non-interactive)
+RUN git clone https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh \
+  && cp /root/.oh-my-zsh/templates/zshrc.zsh-template /root/.zshrc \
+  && sed -i 's/robbyrussell/bira/' /root/.zshrc || true
+
+# Ensure any user-local binaries (atuin installer may put binaries into ~/.local/bin) are on PATH
+ENV PATH="/root/.local/bin:/opt/venv/bin:${PATH}"
+
+# Install Atuin via upstream install script (if ATUIN_INSTALL is truthy)
+# The installer fetches the Atuin binaries from the project's releases.
+RUN if [ "${ATUIN_INSTALL}" = "1" ]; then \
+      curl -fsSL https://raw.githubusercontent.com/ellie/atuin/main/install.sh | bash -s -- -y || true; \
+    fi
+
+# If atuin was installed, add zsh initialization to the zshrc so it is available in interactive shells
+RUN if command -v atuin >/dev/null 2>&1; then \
+      echo "" >> /root/.zshrc; \
+      echo "# Atuin shell history (auto-initialized)" >> /root/.zshrc; \
+      echo 'export PATH="/root/.local/bin:${PATH}"' >> /root/.zshrc; \
+      echo 'eval "$(atuin init zsh)"' >> /root/.zshrc; \
+    fi
+
+# Make sure zsh is available as login shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+WORKDIR /root
+
+# ensure scripts are executable (useful when image used standalone without bind mount)
+RUN chmod -R +x /opt/scripts || true
+
+ENTRYPOINT ["/usr/bin/zsh", "-l"]
+CMD []

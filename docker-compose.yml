@@ -1,0 +1,45 @@
+services:
+  postgis-local:
+    image: postgis/postgis
+    container_name: postgis-local-compose
+    restart: "no"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev
+      POSTGIS_MAJOR: 3
+      POSTGIS_VERSION: 3.5.2+dfsg-1.pgdg110+1
+      PG_MAJOR: 17
+      PG_VERSION: 17.5-1.pgdg110+1
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/mnichols/data/postgis-local:/var/lib/postgresql/data
+      - /home/mnichols/backups/postgis-local:/var/backups
+    command: ["postgres"]
+
+  pg-shell:
+    build:
+      context: .
+      dockerfile: Dockerfile.pgshell
+    container_name: pg-shell-compose
+    # keep it from automatically restarting; you'll run it interactively with `docker compose run`
+    restart: "no"
+    environment:
+      PGHOST: postgis-local
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: localdev
+      # default DB used by psql/pgcli when none specified
+      PGDATABASE: postgres
+    volumes:
+      # mount scripts so you can edit them locally and use them from the shell
+      - ./scripts:/opt/scripts:cached
+      # optional: persist pgcli config between runs (change path if needed)
+      - ~/.config/pgcli:/root/.config/pgcli
+      # optional: mount your dotfiles if you want them available
+      - ~/.ssh:/root/.ssh:ro
+    tty: true
+    stdin_open: true
+    # default entry to an interactive login zsh
+    entrypoint: ["/usr/bin/zsh", "-l"]
