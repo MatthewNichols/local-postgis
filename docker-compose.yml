@@ -4,8 +4,8 @@ services:
     container_name: postgis-local-compose
     restart: "no"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: localdev
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGIS_MAJOR: 3
       POSTGIS_VERSION: 3.5.2+dfsg-1.pgdg110+1
       PG_MAJOR: 17
@@ -14,8 +14,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /home/mnichols/data/postgis-local:/var/lib/postgresql/data
-      - /home/mnichols/backups/postgis-local:/var/backups
+      - ${HOST_DATA_FILE_ROOT}/data/postgis-local:/var/lib/postgresql/data
     command: ["postgres"]
 
   pg-shell:
@@ -28,10 +27,10 @@ services:
     environment:
       PGHOST: postgis-local
       PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: localdev
+      PGUSER: ${PGSHELL_USER}
+      PGPASSWORD: ${PGSHELL_PASSWORD}
       # default DB used by psql/pgcli when none specified
-      PGDATABASE: postgres
+      PGDATABASE: ${PGSHELL_DB}
     volumes:
       # mount scripts so you can edit them locally and use them from the shell
       - ./scripts:/opt/scripts:cached
@@ -39,7 +38,14 @@ services:
       - ~/.config/pgcli:/root/.config/pgcli
       # optional: mount your dotfiles if you want them available
       - ~/.ssh:/root/.ssh:ro
+      # persist home directory between container rebuilds
+      - pg-shell-home:/root
+      # mount backups directory so scripts can write backups to the host
+      - ${HOST_DATA_FILE_ROOT}/backups/postgis-local:/var/backups
     tty: true
     stdin_open: true
     # default entry to an interactive login zsh
     entrypoint: ["/usr/bin/zsh", "-l"]
+
+volumes:
+  pg-shell-home:
