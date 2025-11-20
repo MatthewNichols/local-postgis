@@ -38,6 +38,9 @@ PGPASSWORD="${PGPASSWORD:-}" pg_restore -h "${PGHOST}" -p "${PGPORT}" -U "${PGUS
 echo "Setting ownership of objects in ${TARGET_DB} to ${PGUSER} (best-effort)..."
 PGPASSWORD="${PGPASSWORD:-}" psql -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${TARGET_DB}" -c "REASSIGN OWNED BY current_user TO \"${PGUSER}\";" || true
 
+echo "Adding database comment..."
+PGPASSWORD="${PGPASSWORD:-}" psql -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${TARGET_DB}" -c "COMMENT ON DATABASE \"${TARGET_DB}\" IS 'Cloned from ${SOURCE_DB} on ${TIMESTAMP}';"
+
 echo "Done. You can connect using:"
 echo "  psql postgresql://${PGUSER}:<password>@${PGHOST}:${PGPORT}/${TARGET_DB}"
 echo "or with pgcli (interactive):"
