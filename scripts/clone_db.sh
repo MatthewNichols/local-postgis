@@ -16,11 +16,15 @@ fi
 SOURCE_DB="$1"
 TARGET_DB="$2"
 TIMESTAMP="$(date +%Y%m%d%H%M%S)"
-DUMP_FILE="/tmp/${SOURCE_DB}_${TIMESTAMP}.dump"
+CLONE_DIR="/var/backups/clones"
+DUMP_FILE="${CLONE_DIR}/${SOURCE_DB}_${TIMESTAMP}.dump"
 
 : "${PGHOST:=postgis-local}"
 : "${PGPORT:=5432}"
 : "${PGUSER:=postgres}"
+
+# Ensure the clones directory exists
+mkdir -p "${CLONE_DIR}"
 
 echo "Dumping ${SOURCE_DB} from ${PGHOST}:${PGPORT} as ${PGUSER} -> ${DUMP_FILE}..."
 PGPASSWORD="${PGPASSWORD:-}" pg_dump -Fc -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -f "${DUMP_FILE}" "${SOURCE_DB}"
