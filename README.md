@@ -1,5 +1,7 @@
 # Local PostGIS Development Environment
 
+This is how I manage a local PostgreSQL/PostGIS development environment using Docker Compose. I am not a Docker expert, but this setup has worked well for my needs. It is very much an expression of my personal preferences and workflow and makes no claims to be useful to anyone else. But if it is helpful to you, feel free to use it!
+
 ## Purpose & Description
 
 This project provides a local PostgreSQL/PostGIS development environment using Docker Compose. It consists of two services:
