@@ -28,7 +28,7 @@ ENV PATH="/root/.local/bin:/opt/venv/bin:${PATH}"
 # Install Atuin via upstream install script (if ATUIN_INSTALL is truthy)
 # The installer fetches the Atuin binaries from the project's releases.
 RUN if [ "${ATUIN_INSTALL}" = "1" ]; then \
-      curl -fsSL https://raw.githubusercontent.com/ellie/atuin/main/install.sh | bash -s -- -y || true; \
+      curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh || true; \
     fi
 
 # If atuin was installed, add zsh initialization to the zshrc so it is available in interactive shells
