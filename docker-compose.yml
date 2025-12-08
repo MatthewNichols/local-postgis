@@ -30,6 +30,7 @@ services:
     volumes:
       # mount scripts so you can edit them locally and use them from the shell
       - ./scripts:/opt/scripts:cached
+      - ./zsh-custom:/root/.oh-my-zsh/custom:cached
       # optional: persist pgcli config between runs (change path if needed)
       - ~/.config/pgcli:/root/.config/pgcli
       # optional: mount your dotfiles if you want them available
