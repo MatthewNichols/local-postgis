@@ -1,15 +1,11 @@
 services:
   postgis-local:
-    image: postgis/postgis
+    image: postgis/postgis:15-3.4
     container_name: postgis-local-compose
     restart: "no"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGIS_MAJOR: 3
-      POSTGIS_VERSION: 3.5.2+dfsg-1.pgdg110+1
-      PG_MAJOR: 17
-      PG_VERSION: 17.5-1.pgdg110+1
       PGDATA: /var/lib/postgresql/data
     ports:
       - "5432:5432"
