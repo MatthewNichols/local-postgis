@@ -84,15 +84,23 @@ The `pg-shell` container includes the following tools:
 
 ### Available Scripts
 
-All scripts are located in the `/opt/scripts` directory inside the container and can be executed directly:
+All scripts are located in the `/opt/scripts` directory inside the container. For convenience, shell functions are automatically loaded that wrap these scripts, so you can call them from anywhere without specifying paths:
+
+- `backup_db_data <database_name>` - Create a data-only backup
+- `backup_db_full <database_name>` - Create a full backup (schema + data)
+- `clone_db <source_db> <target_db>` - Clone a database
+- `drop_db <database_name>` - Drop a database
+
+You can also execute the scripts directly if preferred:
 
 #### `clone_db.sh`
 Clone an existing database to a new database with a timestamped dump file.
 
 ```bash
-/opt/scripts/clone_db.sh <source_db> <target_db>
+# Using the shell function (recommended)
+clone_db production dev_feature_branch
 
-# Example:
+# Or using the script directly
 /opt/scripts/clone_db.sh production dev_feature_branch
 ```
 
@@ -106,9 +114,10 @@ Clone an existing database to a new database with a timestamped dump file.
 Create a data-only backup using INSERT statements.
 
 ```bash
-/opt/scripts/backup_db_data.sh <database_name>
+# Using the shell function (recommended)
+backup_db_data myapp
 
-# Example:
+# Or using the script directly
 /opt/scripts/backup_db_data.sh myapp
 ```
 
@@ -120,9 +129,10 @@ Create a data-only backup using INSERT statements.
 Create a full backup (schema + data) using INSERT statements.
 
 ```bash
-/opt/scripts/backup_db_full.sh <database_name>
+# Using the shell function (recommended)
+backup_db_full myapp
 
-# Example:
+# Or using the script directly
 /opt/scripts/backup_db_full.sh myapp
 ```
 
@@ -134,9 +144,10 @@ Create a full backup (schema + data) using INSERT statements.
 Drop (delete) a database.
 
 ```bash
-/opt/scripts/drop_db.sh <database_name>
+# Using the shell function (recommended)
+drop_db old_test_db
 
-# Example:
+# Or using the script directly
 /opt/scripts/drop_db.sh old_test_db
 ```
 
@@ -173,8 +184,19 @@ The `pg-shell` service has several persistent volumes:
 - **Home directory** (`pg-shell-home` volume): Preserves shell history, Atuin data, and other user configurations across container rebuilds
 - **Backups** (`${HOST_DATA_FILE_ROOT}/backups/postgis-local` → `/var/backups`): All backup scripts write to this directory (HOST_DATA_FILE_ROOT being defined in `.env`), making backups accessible on your host machine
 - **Scripts** (`./scripts` → `/opt/scripts`): Mounted from the project directory, so you can edit scripts locally and use them immediately
+- **Custom Zsh scripts** (`./zsh-custom/` → `/root/.oh-my-zsh/custom/`): Any `.zsh` files you place in the `zsh-custom` directory will be automatically loaded by oh-my-zsh, allowing you to add custom functions, aliases, or configurations
 - **pgcli config** (`~/.config/pgcli`): Persists pgcli settings and preferences
 - **SSH keys** (`~/.ssh`, read-only): Available for git operations or remote connections
+
+### Customizing Your Shell
+
+You can add custom Zsh functions, aliases, or configurations by creating `.zsh` files in the `zsh-custom/` directory:
+
+1. Create your custom script in `zsh-custom/` (e.g., `my-aliases.zsh`)
+2. Rebuild the container: `docker compose build pg-shell`
+3. Your customizations will be automatically loaded in new shell sessions
+
+The project already includes `zsh-custom/pg-scripts.zsh` which provides the convenient shell function wrappers for the database management scripts.
 
 ### Tips
 
@@ -183,3 +205,4 @@ The `pg-shell` service has several persistent volumes:
 - All backups are timestamped and stored on your host machine at `~/backups/postgis-local`
 - The `pg-shell` container connects to the `postgis-local` database server automatically
 - Edit scripts in your local `./scripts/` directory and they're immediately available in the container
+- Add custom Zsh functions or aliases in `./zsh-custom/` and rebuild to have them available in your shell
