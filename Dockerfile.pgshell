@@ -25,6 +25,9 @@ RUN git clone https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh \
 # Ensure any user-local binaries (atuin installer may put binaries into ~/.local/bin) are on PATH
 ENV PATH="/root/.local/bin:/opt/venv/bin:${PATH}"
 
+# Disable oh-my-zsh completion security check (needed for bind-mounted custom directory)
+ENV ZSH_DISABLE_COMPFIX=true
+
 # Install Atuin via upstream install script (if ATUIN_INSTALL is truthy)
 # The installer fetches the Atuin binaries from the project's releases.
 RUN if [ "${ATUIN_INSTALL}" = "1" ]; then \
