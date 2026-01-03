@@ -13,6 +13,10 @@ clone_db() {
   /opt/scripts/clone_db.sh "$@"
 }
 
+clone_db_from_remote() {
+  /opt/scripts/clone_db_from_remote.sh "$@"
+}
+
 drop_db() {
   /opt/scripts/drop_db.sh "$@"
 }
