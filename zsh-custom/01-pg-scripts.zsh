@@ -17,3 +17,7 @@ drop_db() {
   /opt/scripts/drop_db.sh "$@"
 }
 
+restore_db_full() {
+  /opt/scripts/restore_db_full.sh "$@"
+}
+
