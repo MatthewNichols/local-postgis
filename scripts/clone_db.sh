@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./scripts/clone_db.sh <source_db> <target_db>
-# Examples:
-#   ./scripts/clone_db.sh dev db_feature_x
-#
-# This script connects to the PG server defined by PGHOST/PGPORT/PGUSER/PGPASSWORD
-# Defaults are set in docker-compose: PGHOST=postgis-local, PGUSER=postgres, PGPASSWORD=localdev
+# @description Clone a local database to a new database on the same server
+# @usage clone_db <source_db> <target_db>
+# @arg source_db   Name of the database to clone from
+# @arg target_db   Name for the new cloned database
+# @env PGHOST      PostgreSQL host (default: postgis-local)
+# @env PGPORT      PostgreSQL port (default: 5432)
+# @env PGUSER      PostgreSQL user (default: postgres)
+# @env PGPASSWORD  PostgreSQL password (default: localdev)
+# @example clone_db dev db_feature_x
 set -euo pipefail
 
 if [ "$#" -ne 2 ]; then

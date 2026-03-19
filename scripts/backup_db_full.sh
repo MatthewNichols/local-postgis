@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./scripts/backup_db_full.sh <database_name>
-# Examples:
-#   ./scripts/backup_db_full.sh dev
-#   ./scripts/backup_db_full.sh db_feature_x
-#
-# This script creates a full backup (schema + data with INSERT statements) of the specified database
-# The backup is saved to /var/backups with a timestamp in the filename
-# Connects to the PG server defined by PGHOST/PGPORT/PGUSER/PGPASSWORD
-# Defaults are set in docker-compose: PGHOST=postgis-local, PGUSER=postgres, PGPASSWORD=localdev
+# @description Create a full backup (schema + data) of a database
+# @usage backup_db_full <database_name>
+# @arg database_name  Name of the database to back up
+# @env PGHOST         PostgreSQL host (default: postgis-local)
+# @env PGPORT         PostgreSQL port (default: 5432)
+# @env PGUSER         PostgreSQL user (default: postgres)
+# @env PGPASSWORD     PostgreSQL password (default: localdev)
+# @example backup_db_full dev
+# @example backup_db_full db_feature_x
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then

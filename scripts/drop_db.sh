@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./scripts/drop_db.sh <target_db>
-# This will terminate connections and drop the database.
+# @description Terminate all connections and drop a database (prompts for confirmation)
+# @usage drop_db <database_name>
+# @arg database_name  Name of the database to drop
+# @env PGHOST         PostgreSQL host (default: postgis-local)
+# @env PGPORT         PostgreSQL port (default: 5432)
+# @env PGUSER         PostgreSQL user (default: postgres)
+# @env PGPASSWORD     PostgreSQL password (default: localdev)
+# @example drop_db db_feature_x
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then

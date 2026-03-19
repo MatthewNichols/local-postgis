@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./scripts/restore_db_full.sh <database_name> <backup_filename>
-# Example:
-#   ./scripts/restore_db_full.sh dev dev_full_20251226_120000.sql
+# @description Restore a full SQL backup into a new database (target must not already exist)
+# @usage restore_db_full <database_name> <backup_filename>
+# @arg database_name   Name for the restored database (must not already exist)
+# @arg backup_filename Filename within /var/backups to restore from
+# @env PGHOST          PostgreSQL host (default: postgis-local)
+# @env PGPORT          PostgreSQL port (default: 5432)
+# @env PGUSER          PostgreSQL user (default: postgres)
+# @env PGPASSWORD      PostgreSQL password (default: localdev)
+# @example restore_db_full dev dev_full_20251226_120000.sql
 set -euo pipefail
 
 if [ "$#" -ne 2 ]; then

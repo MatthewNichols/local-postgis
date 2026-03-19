@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./scripts/clone_db_from_remote.sh <source_connection_string> <target_db>
-# Examples:
-#   ./scripts/clone_db_from_remote.sh "postgresql://user:pass@remote.host:5432/prod_db" local_copy
-#   ./scripts/clone_db_from_remote.sh "postgresql://user:pass@10.0.1.50/staging_db" staging_local
-#
-# This script clones a database from a remote PostgreSQL server (specified by connection string)
-# to the local PG server defined by PGHOST/PGPORT/PGUSER/PGPASSWORD
-# Defaults are set in docker-compose: PGHOST=postgis-local, PGUSER=postgres, PGPASSWORD=localdev
+# @description Clone a database from a remote PostgreSQL server to the local server
+# @usage clone_db_from_remote <source_connection_string> <target_db>
+# @arg source_connection_string  PostgreSQL connection string for the remote source
+# @arg target_db                 Name for the new local database
+# @env PGHOST                    Local PostgreSQL host (default: postgis-local)
+# @env PGPORT                    Local PostgreSQL port (default: 5432)
+# @env PGUSER                    Local PostgreSQL user (default: postgres)
+# @env PGPASSWORD                Local PostgreSQL password (default: localdev)
+# @example clone_db_from_remote "postgresql://user:pass@remote.host:5432/prod_db" local_copy
+# @example clone_db_from_remote "postgresql://user:pass@10.0.1.50/staging_db" staging_local
 set -euo pipefail
 
 if [ "$#" -ne 2 ]; then

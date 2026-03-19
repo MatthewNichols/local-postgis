@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Usage:
-#   ./scripts/backup_db_data.sh <database_name>
-# Examples:
-#   ./scripts/backup_db_data.sh dev
-#   ./scripts/backup_db_data.sh db_feature_x
-#
-# This script creates a data-only backup (INSERT statements) of the specified database
-# The backup is saved to /var/backups with a timestamp in the filename
-# Connects to the PG server defined by PGHOST/PGPORT/PGUSER/PGPASSWORD
-# Defaults are set in docker-compose: PGHOST=postgis-local, PGUSER=postgres, PGPASSWORD=localdev
+# @description Create a data-only backup (INSERT statements) of a database
+# @usage backup_db_data <database_name>
+# @arg database_name  Name of the database to back up
+# @env PGHOST         PostgreSQL host (default: postgis-local)
+# @env PGPORT         PostgreSQL port (default: 5432)
+# @env PGUSER         PostgreSQL user (default: postgres)
+# @env PGPASSWORD     PostgreSQL password (default: localdev)
+# @example backup_db_data dev
+# @example backup_db_data db_feature_x
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then
