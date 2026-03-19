@@ -28,9 +28,17 @@ _pg_backup_files() {
 compdef '_arguments "1:database:_pg_databases"' \
   backup_db_data backup_db_full drop_db
 
+# Suggest <source_db>_ as the starting point for the target name
+_clone_db_target() {
+  local source="${words[2]}"
+  if [[ -n "$source" ]]; then
+    compadd -S '' "${source}_"
+  fi
+}
+
 compdef '_arguments \
   "1:source database:_pg_databases" \
-  "2:target database name:"' \
+  "2:target database:_clone_db_target"' \
   clone_db
 
 compdef '_arguments \
