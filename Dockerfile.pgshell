@@ -1,7 +1,6 @@
 FROM postgres:15
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG ATUIN_INSTALL="1"
 
 # Ensure the Python venv tooling is available, create a venv and install pgcli into it.
 # Installing into /opt/venv avoids touching system site-packages (PEP 668), so pip won't complain.
@@ -23,23 +22,22 @@ RUN git clone https://github.com/ohmyzsh/ohmyzsh.git /root/.oh-my-zsh \
   && sed -i 's/robbyrussell/bira/' /root/.zshrc || true
 
 # Ensure any user-local binaries (atuin installer may put binaries into ~/.local/bin) are on PATH
-ENV PATH="/root/.local/bin:/opt/venv/bin:${PATH}"
+ENV PATH="/root/.atuin/bin:/root/.local/bin:/opt/venv/bin:${PATH}"
 
 # Disable oh-my-zsh completion security check (needed for bind-mounted custom directory)
 ENV ZSH_DISABLE_COMPFIX=true
 
-# Install Atuin via upstream install script (if ATUIN_INSTALL is truthy)
+# Install Atuin via upstream install script 
 # The installer fetches the Atuin binaries from the project's releases.
-RUN if [ "${ATUIN_INSTALL}" = "1" ]; then \
-      curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh || true; \
-    fi
+RUN curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh; 
 
-# If atuin was installed, add zsh initialization to the zshrc so it is available in interactive shells
+# If atuin was installed, add zsh initialization to the zshrc so it is available in interactive shells.
+# Use a runtime guard so the shell still starts cleanly if atuin is missing (e.g. failed install on this arch).
 RUN if command -v atuin >/dev/null 2>&1; then \
       echo "" >> /root/.zshrc; \
       echo "# Atuin shell history (auto-initialized)" >> /root/.zshrc; \
       echo 'export PATH="/root/.local/bin:${PATH}"' >> /root/.zshrc; \
-      echo 'eval "$(atuin init zsh)"' >> /root/.zshrc; \
+      echo 'command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh)"' >> /root/.zshrc; \
     fi
 
 # Make sure zsh is available as login shell
