@@ -1,6 +1,6 @@
 # Local PostGIS Development Environment
 
-This is how I manage a local PostgreSQL/PostGIS development environment using Docker Compose. I am not a Docker expert, but this setup has worked well for my needs. It is very much an expression of my personal preferences and workflow and makes no claims to be useful to anyone else. But if it is helpful to you, feel free to use it!
+This is how I manage a local PostgreSQL/PostGIS development environment using Docker Compose. I am not a Docker expert, but this setup has worked well for my needs. It is very much an expression of my personal preferences.
 
 ## Purpose & Description
 
@@ -9,7 +9,7 @@ This project provides a local PostgreSQL/PostGIS development environment using D
 - **postgis-local**: A PostgreSQL 17 database server with PostGIS 3.5 extensions for spatial/geographic data support
 - **pg-shell**: An interactive shell environment with PostgreSQL client tools, utilities, and helper scripts for database management
 
-The setup is designed for local development, with persistent data storage and a collection of utility scripts to streamline common database operations like cloning databases, creating backups, and managing schemas.
+The setup is designed for local development, with persistent data storage and a collection of utility scripts to streamline common database operations like cloning databases, creating backups, and managing remote database copies.
 
 ## Dependencies
 
@@ -60,7 +60,7 @@ The setup is designed for local development, with persistent data storage and a 
 
 ### Overview
 
-The `pg-shell` service provides an interactive Zsh environment with PostgreSQL client tools and utilities pre-installed. It's designed for running database commands, executing scripts, and performing administrative tasks.
+The `pg-shell` service provides an interactive Zsh environment with PostgreSQL client tools and utilities pre-installed. It's designed for running database commands, executing scripts, and performing database management tasks.
 
 ### Starting an Interactive Session
 
@@ -84,11 +84,14 @@ The `pg-shell` container includes the following tools:
 
 ### Available Scripts
 
-All scripts are located in the `/opt/scripts` directory inside the container. For convenience, shell functions are automatically loaded that wrap these scripts, so you can call them from anywhere without specifying paths:
+All scripts are located in the `/opt/scripts` directory inside the container. For convenience, shell functions are automatically loaded that wrap these scripts, so you can call them from anywhere in your shell session.
+
+Available scripts:
 
 - `backup_db_data <database_name>` - Create a data-only backup
 - `backup_db_full <database_name>` - Create a full backup (schema + data)
 - `clone_db <source_db> <target_db>` - Clone a database
+- `clone_db_from_remote <source_connection_string> <target_db>` - Clone a database from a remote PostgreSQL server
 - `drop_db <database_name>` - Drop a database
 
 You can also execute the scripts directly if preferred:
@@ -109,6 +112,49 @@ clone_db production dev_feature_branch
 - Restores the dump to the target
 - Sets ownership to the configured user
 - Adds a database comment recording the clone source and timestamp
+
+#### `clone_db_from_remote.sh`
+Clone a database from a remote PostgreSQL server to your local development environment.
+
+```bash
+# Using the shell function (recommended)
+clone_db_from_remote "postgresql://user:pass@remote.host:5432/prod_db" local_copy
+
+# Or using the script directly
+/opt/scripts/clone_db_from_remote.sh "postgresql://user:pass@remote.host:5432/prod_db" local_copy
+```
+
+**Arguments:**
+- `source_connection_string` - A PostgreSQL connection URI for the remote source database (e.g., `postgresql://user:password@hostname:5432/database_name`)
+- `target_db` - The name of the new local database to create
+
+**Environment Variables:**
+The script uses the following environment variables for connecting to your local PostgreSQL server (all have defaults):
+- `PGHOST` - Local PostgreSQL host (default: `postgis-local`)
+- `PGPORT` - Local PostgreSQL port (default: `5432`)
+- `PGUSER` - Local PostgreSQL user (default: `postgres`)
+- `PGPASSWORD` - Local PostgreSQL password (default: `localdev`)
+
+**What it does:**
+1. Connects to the remote PostgreSQL server using the provided connection string
+2. Creates a custom-format dump file locally at `/var/backups/clones/remote_YYYYMMDDHHMMSS.dump`
+3. Creates a new database on your local PostgreSQL server with the specified name
+4. Restores the remote dump into the new local database
+5. Reassigns object ownership to the local PostgreSQL user
+6. Adds a database comment with the clone timestamp for reference
+
+**Examples:**
+
+```bash
+# Clone a production database
+clone_db_from_remote "postgresql://prod_user:prod_pass@prod.example.com:5432/main_app" prod_local
+
+# Clone a staging database from a different host
+clone_db_from_remote "postgresql://staging_user:staging_pass@10.0.1.50/staging_db" staging_local
+
+# With custom local credentials
+PGUSER=custom_user PGPASSWORD=custom_pass clone_db_from_remote "postgresql://user:pass@remote.host/db" target_db
+```
 
 #### `backup_db_data.sh`
 Create a data-only backup using INSERT statements.
@@ -182,9 +228,9 @@ psql -d myapp
 The `pg-shell` service has several persistent volumes:
 
 - **Home directory** (`pg-shell-home` volume): Preserves shell history, Atuin data, and other user configurations across container rebuilds
-- **Backups** (`${HOST_DATA_FILE_ROOT}/backups/postgis-local` → `/var/backups`): All backup scripts write to this directory (HOST_DATA_FILE_ROOT being defined in `.env`), making backups accessible on your host machine
+- **Backups** (`${HOST_DATA_FILE_ROOT}/backups/postgis-local` → `/var/backups`): All backup scripts write to this directory (HOST_DATA_FILE_ROOT being defined in `.env`), making backups accessible from your host machine
 - **Scripts** (`./scripts` → `/opt/scripts`): Mounted from the project directory, so you can edit scripts locally and use them immediately
-- **Custom Zsh scripts** (`./zsh-custom/` → `/root/.oh-my-zsh/custom/`): Any `.zsh` files you place in the `zsh-custom` directory will be automatically loaded by oh-my-zsh, allowing you to add custom functions, aliases, or configurations
+- **Custom Zsh scripts** (`./zsh-custom/` → `/root/.oh-my-zsh/custom/`): Any `.zsh` files you place in the `zsh-custom` directory will be automatically loaded by oh-my-zsh, allowing you to add custom functions and aliases
 - **pgcli config** (`~/.config/pgcli`): Persists pgcli settings and preferences
 - **SSH keys** (`~/.ssh`, read-only): Available for git operations or remote connections
 
