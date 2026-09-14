@@ -1,6 +1,6 @@
 # Local PostGIS Development Environment
 
-This is how I manage a local PostgreSQL/PostGIS development environment using Docker Compose. I am not a Docker expert, but this setup has worked well for my needs. It is very much an expression of my personal preferences.
+This is how I manage a local PostgreSQL/PostGIS development environment using Docker Compose. In particular it allows me to make branch specific clones of development dbs so I can test migrations prior to commit and/or merge.
 
 ## Purpose & Description
 
