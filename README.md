@@ -17,6 +17,16 @@ The setup is designed for local development, with persistent data storage and a 
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - Environment variables configured in a `.env` file (see Setup section)
 
+### Platform support
+
+- **Linux:** developed and used here.
+- **macOS:** expected to work. The Docker side is the same, and the skill's `readlink -f` needs macOS 12.3 or later. Untested.
+- **Windows:** use **WSL2** with Docker Desktop's WSL2 backend, and keep this repo (and your skills directory and agent) inside the WSL filesystem, not under `C:\`. The scripts and the skill's commands are bash, so native PowerShell/cmd won't work, and Windows-style paths in `HOST_DATA_FILE_ROOT` or `LOCAL_POSTGIS_DIR` break the volume mounts. Untested.
+
+**Note:** I develop and test this on Linux only. macOS and Windows (WSL2) *should* work but I haven't tried them. If you run into problems, please open an issue on this repo, or send a fix if you've already sorted it out.
+
+The `docker-compose.yml` also mounts `~/.ssh` and `~/.config/pgcli` from your home directory; create them (or remove those mounts) if they don't exist on your machine.
+
 ## Setup
 
 1. **Clone this repository** (or create the files in your desired location)
@@ -316,7 +326,9 @@ The stem is the original ("base") database and the branch is the git branch name
    ln -s "$PWD/skills/pg-branch-db" ~/.claude/skills/pg-branch-db
    ```
 
-2. Set `LOCAL_POSTGIS_DIR` to the **absolute path** of this checkout, permanently. A plain `export` only lasts for the current shell, and `$PWD` in a profile would resolve to wherever each shell starts. Either add it to your shell profile:
+2. No path configuration is needed: the skill finds this repo from the symlink. It must be a **symlink** (not a copy) for that to work.
+
+   **Optional override:** if you installed it some other way, or want to point at a different checkout, set `LOCAL_POSTGIS_DIR` to the **absolute path** of the checkout, permanently. A plain `export` only lasts for the current shell, and `$PWD` in a profile would resolve to wherever each shell starts. Either add it to your shell profile:
 
    ```bash
    echo "export LOCAL_POSTGIS_DIR=\"$PWD\"" >> ~/.zshrc   # run from this checkout; the path is resolved when the line is written

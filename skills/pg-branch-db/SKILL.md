@@ -33,6 +33,19 @@ If truncation would make two names collide, tell the user and ask for a shorter 
 
 To find the stem from a DB name that might already be a branch DB, strip `_branch_*`: `gloria_branch_x` → `gloria`.
 
+## Locating the repo
+
+Every command below needs `LOCAL_POSTGIS_DIR`, the root of the `local-postgis` checkout. Resolve it once, before the first command:
+
+1. If the `LOCAL_POSTGIS_DIR` environment variable is set, use it.
+2. Otherwise, derive it from this skill's own directory (the base directory you were given for this skill). When the skill was installed by symlink, that path resolves into the repo at `<repo>/skills/pg-branch-db`:
+
+   ```bash
+   LOCAL_POSTGIS_DIR="$(cd "$(readlink -f "<this skill's directory>")/../.." && pwd)"
+   ```
+
+3. Check that it is really the repo: both `"$LOCAL_POSTGIS_DIR/docker-compose.yml"` and `"$LOCAL_POSTGIS_DIR/scripts/clone_db.sh"` must exist. If they don't (for example the skill folder was copied instead of symlinked) or you don't know the skill's directory, ask the user for the path. Don't guess paths.
+
 ## Running the scripts
 
 The scripts live in this repo's `scripts/` dir and run inside the `pg-shell` container. Run them non-interactively from the host with `docker compose` (there is no TTY, so use `-T`):
@@ -41,7 +54,7 @@ The scripts live in this repo's `scripts/` dir and run inside the `pg-shell` con
 docker compose -f "$LOCAL_POSTGIS_DIR/docker-compose.yml" run --rm -T --entrypoint bash pg-shell /opt/scripts/<script>.sh <args>
 ```
 
-- `LOCAL_POSTGIS_DIR` is the checkout of the `local-postgis` repo. If the current directory is not that repo, find it (check the env var, then ask the user). Don't guess paths.
+- `LOCAL_POSTGIS_DIR` is resolved as described in "Locating the repo" above. The current directory is usually a different project, so don't assume it.
 - The compose project name comes from the directory, so always pass `-f` with the full path.
 - The `postgis-local` service must be running. Check with `docker compose -f ... ps postgis-local`; if it is stopped, tell the user and start it with `docker compose -f ... up -d postgis-local` (that is a safe, expected action, but say you're doing it).
 - Scripts read `PGHOST/PGUSER/PGPASSWORD` from the container environment. Do not print or pass credentials.
