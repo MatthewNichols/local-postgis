@@ -6,7 +6,7 @@ This is how I manage a local PostgreSQL/PostGIS development environment using Do
 
 This project provides a local PostgreSQL/PostGIS development environment using Docker Compose. It consists of two services:
 
-- **postgis-local**: A PostgreSQL 17 database server with PostGIS 3.5 extensions for spatial/geographic data support
+- **postgis-local**: A PostgreSQL database server with PostGIS extensions for spatial/geographic data support (exact versions are set by the `image:` line in [docker-compose.yml](docker-compose.yml))
 - **pg-shell**: An interactive shell environment with PostgreSQL client tools, utilities, and helper scripts for database management
 
 The setup is designed for local development, with persistent data storage and a collection of utility scripts to streamline common database operations like cloning databases, creating backups, and managing remote database copies.
@@ -201,31 +201,41 @@ drop_db old_test_db
 - Safely drops a database
 - Prompts for confirmation unless `-y`/`--yes` is passed (intended for non-interactive callers that have already confirmed)
 
-## Branch databases & the Claude Code skill
-
-Convention: a branch database is named `{stem}_branch_{branch}` (e.g. `gloria_branch_feature_login`), so the original and its branches are obvious in `list_dbs`.
-
-[skills/pg-branch-db/SKILL.md](skills/pg-branch-db/SKILL.md) teaches Claude Code to clone, switch, list and tidy these databases. To use it, symlink it into your skills directory (user-wide, or per-project under `.claude/skills/`) and set `LOCAL_POSTGIS_DIR` to this checkout:
+#### `list_dbs.sh`
+List the local databases (excluding templates and `postgres`).
 
 ```bash
-ln -s "$PWD/skills/pg-branch-db" ~/.claude/skills/pg-branch-db
+# Table output
+list_dbs
+
+# JSON output, for scripts and AI tooling
+list_dbs --json
 ```
 
-`LOCAL_POSTGIS_DIR` must be the **absolute path** to this checkout, set permanently (a plain `export` only lasts for the current shell, and `$PWD` in a profile would resolve to wherever each shell starts). Either add it to your shell profile:
+| Column | Meaning |
+|---|---|
+| `name` | Database name |
+| `kind` | `branch` if the name contains `_branch_`, otherwise `base` |
+| `size` | On-disk size |
+| `conns` | Current connections |
+| `cloned` | Date parsed from the `Cloned from X on <timestamp>` comment written by `clone_db`; blank for databases not created that way |
+| `last_write` | Newest file modification time in the database's data directory (UTC) |
+| `comment` | The database comment |
+
+`last_write` is approximate: it can lag by a checkpoint interval, autovacuum can bump it, and **reads are not tracked**. Read it as "last written", not "last used". `--json` adds `stem`, `branch` and `size_bytes`.
+
+`drop_db` prompts for a typed `YES` unless you pass `-y`/`--yes`, which exists for non-interactive callers (such as the skill below) that have already confirmed with you.
+
+### Running scripts from the host
+
+You can run any script non-interactively without opening a shell. The `postgis-local` service must already be running (`docker compose up -d postgis-local`).
 
 ```bash
-echo "export LOCAL_POSTGIS_DIR=\"$PWD\"" >> ~/.zshrc   # run from this checkout; the path is resolved when the line is written
+docker compose -f /path/to/local-postgis/docker-compose.yml run --rm -T \
+  --entrypoint bash pg-shell /opt/scripts/list_dbs.sh --json
 ```
 
-or set it for Claude Code only in `~/.claude/settings.json`:
-
-```json
-{ 
-   "env": { 
-      "LOCAL_POSTGIS_DIR": "/absolute/path/to/local-postgis" 
-   }
-}
-```
+`-T` disables the TTY, and `-f` with a full path lets you run it from any directory.
 
 ### Environment Configuration
 
@@ -269,6 +279,8 @@ You can add custom Zsh functions, aliases, or configurations by creating `.zsh` 
 2. Rebuild the container: `docker compose build pg-shell`
 3. Your customizations will be automatically loaded in new shell sessions
 
+**Note:** changes under `zsh-custom/` (new wrappers like `list_dbs`, tab completions) only take effect after `docker compose build pg-shell`. Changes to `scripts/` are live immediately.
+
 The project already includes `zsh-custom/pg-scripts.zsh` which provides the convenient shell function wrappers for the database management scripts.
 
 ### Tips
@@ -279,3 +291,69 @@ The project already includes `zsh-custom/pg-scripts.zsh` which provides the conv
 - The `pg-shell` container connects to the `postgis-local` database server automatically
 - Edit scripts in your local `./scripts/` directory and they're immediately available in the container
 - Add custom Zsh functions or aliases in `./zsh-custom/` and rebuild to have them available in your shell
+
+## Branch databases & the Claude Code skill
+
+Branch-specific databases let you test migrations against real data before committing or merging, without touching your main dev database.
+
+### Naming convention
+
+```
+{stem}_branch_{branch}
+```
+
+The stem is the original ("base") database and the branch is the git branch name, lowercased with anything other than letters and digits turned into `_`. For example, branch `feature/login-v2` on base `gloria` gives `gloria_branch_feature_login_v2`. Names are limited to 63 bytes by PostgreSQL. Because of the convention, `list_dbs` can show which databases are originals and which are branches.
+
+### The skill
+
+[skills/pg-branch-db/SKILL.md](skills/pg-branch-db/SKILL.md) teaches Claude Code to **clone**, **switch**, **list** and **tidy** branch databases. It uses the scripts in this repo, so nothing else needs to be installed.
+
+**Install**
+
+1. Symlink it into your skills directory (user-wide, or per-project under `.claude/skills/`), run from this checkout:
+
+   ```bash
+   ln -s "$PWD/skills/pg-branch-db" ~/.claude/skills/pg-branch-db
+   ```
+
+2. Set `LOCAL_POSTGIS_DIR` to the **absolute path** of this checkout, permanently. A plain `export` only lasts for the current shell, and `$PWD` in a profile would resolve to wherever each shell starts. Either add it to your shell profile:
+
+   ```bash
+   echo "export LOCAL_POSTGIS_DIR=\"$PWD\"" >> ~/.zshrc   # run from this checkout; the path is resolved when the line is written
+   ```
+
+   or set it for Claude Code only in `~/.claude/settings.json`:
+
+   ```json
+   { "env": { "LOCAL_POSTGIS_DIR": "/absolute/path/to/local-postgis" } }
+   ```
+
+3. Make sure `postgis-local` is running. Optionally allow `Bash(docker compose *)` in your Claude Code permissions to avoid per-command prompts (note this also covers destructive subcommands such as `down`).
+
+**Using it**
+
+You normally don't need to invoke it; Claude Code picks it up from what you ask. You can also call it explicitly with `/pg-branch-db`. Example prompts:
+
+- "Make a db for this branch"
+- "Switch the project to the branch db"
+- "List my databases"
+- "Clean up old branch dbs"
+
+### Example workflow
+
+```text
+git checkout -b feature/login-v2
+  "make a db for this branch"      -> clones gloria -> gloria_branch_feature_login_v2
+                                      and points the project's connection string at it
+  ... develop and test migrations against the branch database ...
+git merge feature/login-v2 && git branch -d feature/login-v2
+  "clean up old dbs"               -> lists branch DBs whose branch is merged or gone,
+                                      shows size and last write, asks you to confirm each drop
+```
+
+### Tidy safety
+
+- Only databases containing `_branch_` are ever dropped by the skill. Base databases, `postgres` and templates are refused.
+- You confirm the exact list before anything is dropped, and a general "clean up" request doesn't count as confirmation.
+- A branch database is kept if its git branch still exists, if it is the one the project currently points at, or if it has active connections.
+- Clones made before this convention (for example `gloria_hotel-section`) are treated as **legacy clones**. The skill lists them but never renames or drops them on its own; rename or drop them manually (`ALTER DATABASE old RENAME TO gloria_branch_...`, or `drop_db`).
