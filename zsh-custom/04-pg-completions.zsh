@@ -26,7 +26,15 @@ _pg_backup_files() {
 }
 
 compdef '_arguments "1:database:_pg_databases"' \
-  backup_db_data backup_db_full drop_db
+  backup_db_data backup_db_full
+
+# drop_db takes an optional -y/--yes flag before the database name
+compdef '_arguments \
+  "(-y --yes)"{-y,--yes}"[skip confirmation prompt]" \
+  "1:database:_pg_databases"' \
+  drop_db
+
+compdef '_arguments "--json[output JSON instead of a table]"' list_dbs
 
 # Suggest <source_db>_ as the starting point for the target name
 _clone_db_target() {
