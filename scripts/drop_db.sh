@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # @description Terminate all connections and drop a database (prompts for confirmation)
-# @usage drop_db <database_name>
+# @usage drop_db [-y|--yes] <database_name>
 # @arg database_name  Name of the database to drop
+# @arg -y, --yes      Skip the confirmation prompt (for non-interactive use; caller must have confirmed)
 # @env PGHOST         PostgreSQL host (default: postgis-local)
 # @env PGPORT         PostgreSQL port (default: 5432)
 # @env PGUSER         PostgreSQL user (default: postgres)
@@ -9,8 +10,14 @@
 # @example drop_db db_feature_x
 set -euo pipefail
 
+ASSUME_YES=0
+if [ "${1:-}" = "-y" ] || [ "${1:-}" = "--yes" ]; then
+  ASSUME_YES=1
+  shift
+fi
+
 if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <db_to_drop>"
+  echo "Usage: $0 [-y|--yes] <db_to_drop>"
   exit 2
 fi
 
@@ -20,10 +27,12 @@ TARGET_DB="$1"
 : "${PGPORT:=5432}"
 : "${PGUSER:=postgres}"
 
-read -r -p "Are you sure you want to DROP database '${TARGET_DB}' on ${PGHOST}:${PGPORT}? Type YES to proceed: " confirm
-if [ "$confirm" != "YES" ]; then
-  echo "Aborting."
-  exit 1
+if [ "$ASSUME_YES" -ne 1 ]; then
+  read -r -p "Are you sure you want to DROP database '${TARGET_DB}' on ${PGHOST}:${PGPORT}? Type YES to proceed: " confirm
+  if [ "$confirm" != "YES" ]; then
+    echo "Aborting."
+    exit 1
+  fi
 fi
 
 echo "Revoking new connections and terminating active backends for ${TARGET_DB}..."
