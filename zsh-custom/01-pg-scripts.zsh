@@ -17,6 +17,10 @@ clone_db_from_remote() {
   /opt/scripts/clone_db_from_remote.sh "$@"
 }
 
+list_dbs() {
+  /opt/scripts/list_dbs.sh "$@"
+}
+
 drop_db() {
   /opt/scripts/drop_db.sh "$@"
 }
