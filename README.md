@@ -92,7 +92,8 @@ Available scripts:
 - `backup_db_full <database_name>` - Create a full backup (schema + data)
 - `clone_db <source_db> <target_db>` - Clone a database
 - `clone_db_from_remote <source_connection_string> <target_db>` - Clone a database from a remote PostgreSQL server
-- `drop_db <database_name>` - Drop a database
+- `drop_db [-y] <database_name>` - Drop a database (`-y` skips the confirmation prompt)
+- `list_dbs [--json]` - List databases with size, connection count and base/branch classification
 
 You can also execute the scripts directly if preferred:
 
@@ -198,7 +199,33 @@ drop_db old_test_db
 ```
 
 - Safely drops a database
-- Includes confirmation prompts for safety
+- Prompts for confirmation unless `-y`/`--yes` is passed (intended for non-interactive callers that have already confirmed)
+
+## Branch databases & the Claude Code skill
+
+Convention: a branch database is named `{stem}_branch_{branch}` (e.g. `gloria_branch_feature_login`), so the original and its branches are obvious in `list_dbs`.
+
+[skills/pg-branch-db/SKILL.md](skills/pg-branch-db/SKILL.md) teaches Claude Code to clone, switch, list and tidy these databases. To use it, symlink it into your skills directory (user-wide, or per-project under `.claude/skills/`) and set `LOCAL_POSTGIS_DIR` to this checkout:
+
+```bash
+ln -s "$PWD/skills/pg-branch-db" ~/.claude/skills/pg-branch-db
+```
+
+`LOCAL_POSTGIS_DIR` must be the **absolute path** to this checkout, set permanently (a plain `export` only lasts for the current shell, and `$PWD` in a profile would resolve to wherever each shell starts). Either add it to your shell profile:
+
+```bash
+echo "export LOCAL_POSTGIS_DIR=\"$PWD\"" >> ~/.zshrc   # run from this checkout; the path is resolved when the line is written
+```
+
+or set it for Claude Code only in `~/.claude/settings.json`:
+
+```json
+{ 
+   "env": { 
+      "LOCAL_POSTGIS_DIR": "/absolute/path/to/local-postgis" 
+   }
+}
+```
 
 ### Environment Configuration
 
